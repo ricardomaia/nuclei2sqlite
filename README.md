@@ -61,7 +61,7 @@ npm install
 ```sql
 SELECT ip, 
 host, 
-REPLACE(REPLACE(tags, '[', ''), ']', '') as tags, 
+REPLACE(REPLACE(info_tags, '[', ''), ']', '') as tags, 
 extracted_results,
 cve_id, 
 cwe_id, 
@@ -116,6 +116,42 @@ ip, host
 
 ![image](https://github.com/ricardomaia/nuclei2sqlite/assets/1353811/dbe04239-76e7-4453-8283-0e7f3dfe4006)
 
+
+### Outdated WordPress plugins (sorted by subdomain)
+
+Example: 
+- bar.example.com
+- foo.example.com
+- subdomain1.example.com
+
+```sql
+SELECT ip, 
+host, 
+info_severity, 
+cve_id, 
+cvss_score, 
+info_name, 
+info_description, 
+REPLACE(REPLACE(info_reference, '[', ''), ']', '') as info_reference,
+info_metadata_product, 
+info_classification_cpe
+FROM scan_history
+ORDER BY
+CASE info_severity
+    WHEN 'critical' THEN 1
+    WHEN 'high' THEN 2
+    WHEN 'medium' THEN 3
+    WHEN 'low' THEN 4
+    WHEN 'info' THEN 5
+    ELSE 6
+END,
+CASE 
+WHEN INSTR(  ( SUBSTR (host, INSTR(host, '://') + 3, INSTR(host, '.example.com') - 9  ) ), '.') = 0 THEN
+    ( SUBSTR (host, INSTR(host, '://') + 3, INSTR(host, '.example.com') - 9  ) ) 
+ELSE
+    SUBSTR ( ( SUBSTR (host, INSTR(host, '://') + 3, INSTR(host, '.df.gov.br') - 9  ) ) , INSTR(  ( SUBSTR (host, INSTR(host, '://') + 3, INSTR(host, '.example.com') - 9  ) ), '.') +1 , LENGTH (( SUBSTR (host, INSTR(host, '://') + 3, INSTR(host, '.example.com') - 9  ) ) ))
+END 
+```
 
 ### Total vulnerabilities per scan (grouped by date, ignoring hour and minute)
 
