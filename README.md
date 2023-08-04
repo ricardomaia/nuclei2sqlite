@@ -32,5 +32,75 @@ Replace `scan-report.json` with the actual name of your JSON file.
 npm install
 ```
 
+## Examples of SQL queries
+
+**Gereneral Report**
+
+```sql
+SELECT ip,
+host,
+DATE(timestamp) as scan_date,
+REPLACE(REPLACE(tags, '[', ''), ']', '') as tags,
+extracted_results,
+cve_id,
+cwe_id,
+cvss_metrics,
+cvss_score,
+description,
+remediation,
+info_name,
+REPLACE(REPLACE(info_author, '[', ''), ']', '') as info_author,
+info_description,
+REPLACE(REPLACE(info_reference, '[', ''), ']', '') as info_reference,
+info_severity,
+info_metadata_product,
+info_classification_cpe
+FROM scan_history
+```
+
+**Total vulnerabilities per scan (grouped by date, ignoring hour and minute)**
+
+```sql
+SELECT DATE(timestamp) as scan_date, COUNT(*) as total_vulnerabilities
+FROM scan_history
+GROUP BY DATE(timestamp)
+ORDER BY scan_date;
+```
+
+**Vulnerabilities per IP:**
+
+```sql
+SELECT ip, COUNT(*) as total_vulnerabilities
+FROM scan_history
+GROUP BY ip
+ORDER BY total_vulnerabilities DESC;
+```
+
+**Vulnerabilities per host:**
+
+```sql
+SELECT host, COUNT(*) as total_vulnerabilities
+FROM scan_history
+GROUP BY host
+ORDER BY total_vulnerabilities DESC;
+```
+
+**Vulnerabilities per severity:**
+
+```sql
+SELECT severity, COUNT(*) as total_vulnerabilities
+FROM scan_history
+GROUP BY severity
+ORDER BY total_vulnerabilities DESC;
+```
+
+**Vulnerabilities per template_id:**
+```
+SELECT template, COUNT(*) as total_vulnerabilities
+FROM scan_history
+GROUP BY template
+ORDER BY total_vulnerabilities DESC;
+```
+
 ## License
 This project is licensed under the MIT License.
