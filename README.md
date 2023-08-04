@@ -117,6 +117,25 @@ ip, host
 ![image](https://github.com/ricardomaia/nuclei2sqlite/assets/1353811/dbe04239-76e7-4453-8283-0e7f3dfe4006)
 
 
+### Outdated WordPress plugins (sorted by subdomain)
+
+```sql
+SELECT ip, 
+host, 
+extracted_results,
+matcher_name,
+meta,
+info_name, 
+REPLACE(REPLACE(info_tags, '[', ''), ']', '') as tags, 
+REPLACE(REPLACE(info_reference, '[', ''), ']', '') as info_reference,
+info_severity, 
+info_metadata_product, 
+info_classification_cpe
+FROM scan_history
+WHERE matcher_name = 'outdated_version'
+ORDER BY SUBSTR(host, INSTR(host, '://') + 3, INSTR(host, '.subdomain.exemple.com') - (INSTR(host, '://') + 3));
+```
+
 ### Total vulnerabilities per scan (grouped by date, ignoring hour and minute)
 
 ```sql
