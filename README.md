@@ -61,7 +61,7 @@ npm install
 ```sql
 SELECT ip, 
 host, 
-REPLACE(REPLACE(tags, '[', ''), ']', '') as tags, 
+REPLACE(REPLACE(info_tags, '[', ''), ']', '') as tags, 
 extracted_results,
 cve_id, 
 cwe_id, 
