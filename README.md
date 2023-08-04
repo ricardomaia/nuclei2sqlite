@@ -7,18 +7,36 @@ This is a Node.js project that allows you to do X, Y, and Z. It takes input from
 
 ## Usage
 
-First you need to create a Nuclei scan report in JSON format.
+Create a Nuclei scan report in JSON format.
 
 ```console
 nuclei -tags cve -l targets_file.txt -j -o scan-report.json
 ```
-So execute the nuclei2sqlite.js script.
+
+The first time, run the script with the `-c` option to create the database table.
+
+```console
+node nuclei2sqlite.js -c path/to/your/scan-report.json
+```
+Next time this will not be necessary.
 
 ```console
 node nuclei2sqlite.js path/to/your/scan-report.json
 ```
 Replace `scan-report.json` with the actual name of your JSON file.
 
+### Other options
+
+```
+Usage: nuclei2sqlite [options] <json_file_path>
+
+Transform Nuclei JSON output to SQLite database
+
+Options:
+  -c, --create  Create the database
+  -d, --delete  Delete existing records from the database
+  -h, --help    display help for command
+```
 
 ![image](https://github.com/ricardomaia/nuclei2sqlite/assets/1353811/8e9fa539-65c1-402b-a6bd-c1770e4979fa)
 
