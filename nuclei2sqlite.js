@@ -72,7 +72,6 @@ program
                         template TEXT,
                         host TEXT,
                         ip TEXT,
-                        tags TEXT,
                         timestamp TEXT,
                         severity TEXT,
                         curl_command TEXT,
@@ -104,7 +103,9 @@ program
                         matched_at TEXT,
                         request TEXT,
                         response TEXT,
-                        matcher_status TEXT
+                        matcher_status TEXT,
+                        matcher_name TEXT,
+                        meta TEXT
                     )
                 `);
             }
@@ -122,7 +123,7 @@ program
 
             const stmt = db.prepare(`
                 INSERT INTO scan_history (
-                    id, template, host, ip, tags, timestamp, severity, curl_command,
+                    id, template, host, ip, timestamp, severity, curl_command,
                     extractor_name, extracted_results, cve_id, cwe_id, cvss_metrics,
                     cvss_score, description, remediation,
                     info_name, info_author, info_tags, info_description, info_reference,
@@ -130,9 +131,9 @@ program
                     info_metadata_epss_score, info_classification_cve_id, info_classification_cwe_id,
                     info_classification_cvss_metrics, info_classification_cvss_score,
                     info_classification_epss_score, info_classification_cpe,
-                    type, matched_at, request, response, matcher_status
+                    type, matched_at, request, response, matcher_status, matcher_name, meta
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
 
             rl.on('line', (line) => {
@@ -147,7 +148,6 @@ program
                     const cve_id = parseField(jsonObject["info"]["classification"]?.["cve-id"]?.[0]);
                     const cwe_id = parseField(jsonObject["info"]["classification"]?.["cwe-id"]?.[0]);
                     const info_author = parseField(jsonObject["info"]["author"]);
-                    const tags = parseField(jsonObject["info"]["tags"]);
                     const template = jsonObject["template-id"] ?? null;
                     const host = jsonObject["host"] ?? null;
                     const ip = jsonObject["ip"] ?? "0.0.0.0";
@@ -163,7 +163,7 @@ program
                     const description = jsonObject["info"]["classification"]?.["description"] ?? null;
                     const remediation = jsonObject["info"]["classification"]?.["remediation"] ?? null;
                     const info_name = jsonObject["info"]["name"] ?? null;
-                    const info_tags = jsonObject["info"]["tags"] ?? null;
+                    const info_tags = parseField(jsonObject["info"]["tags"]) ?? null;
                     const info_description = jsonObject["info"]["description"] ?? null;
                     const info_reference = parseField(jsonObject["info"]["reference"]) ?? null;
                     const info_severity = jsonObject["info"]["severity"] ?? null;
@@ -177,13 +177,14 @@ program
                     const info_classification_cvss_score = jsonObject["info"]["classification"]?.["cvss-score"] ?? null;
                     const info_classification_epss_score = jsonObject["info"]["classification"]?.["epss-score"] ?? null;
                     const info_classification_cpe = jsonObject["info"]["classification"]?.["cpe"] ?? null;
+                    const matcher_name = jsonObject["matcher-name"] ?? null;
+                    const meta = parseField(jsonObject["meta"]) ?? null;
 
                     stmt.run(
                         UUID,
                         template,
                         host,
                         ip,
-                        tags,
                         timestamp,
                         severity,
                         curl_command_escaped,
@@ -215,7 +216,9 @@ program
                         jsonObject["matched-at"],
                         jsonObject["request"],
                         jsonObject["response"],
-                        jsonObject["matcher-status"]
+                        jsonObject["matcher-status"],
+                        matcher_name,
+                        meta
                     );
 
                     jsonLine = '';
