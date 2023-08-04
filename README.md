@@ -17,8 +17,10 @@ So execute the nuclei2sqlite.js script.
 ```console
 node nuclei2sqlite.js path/to/your/scan-report.json
 ```
-
 Replace `scan-report.json` with the actual name of your JSON file.
+
+
+![image](https://github.com/ricardomaia/nuclei2sqlite/assets/1353811/8e9fa539-65c1-402b-a6bd-c1770e4979fa)
 
 ## Installation
 - Make sure you have Node.js and npm installed on your system.
