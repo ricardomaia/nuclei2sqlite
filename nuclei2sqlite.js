@@ -37,7 +37,6 @@ const db = new sqlite3.Database("scan_history.db");
 program
     .name('nuclei2sqlite')
     .description('Transform Nuclei JSON output to SQLite database')
-    .option('-c, --create', 'Create the database')
     .option('-d, --delete', 'Delete existing records from the database')
     .arguments('<json_file_path>')
     .action((jsonFilePath) => {
@@ -64,9 +63,8 @@ program
 
         db.serialize(() => {
 
-            if (program.getOptionValue('create')) {
 
-                db.run(`
+            db.run(`
                     CREATE TABLE IF NOT EXISTS scan_history (
                         id TEXT PRIMARY KEY,
                         template TEXT,
@@ -101,14 +99,12 @@ program
                         info_classification_cpe TEXT,
                         type TEXT,
                         matched_at TEXT,
-                        request TEXT,
-                        response TEXT,
                         matcher_status TEXT,
                         matcher_name TEXT,
                         meta TEXT
                     )
                 `);
-            }
+
 
             if (program.getOptionValue('delete')) {
                 db.run(`DELETE FROM scan_history`, (error) => {
@@ -131,9 +127,9 @@ program
                     info_metadata_epss_score, info_classification_cve_id, info_classification_cwe_id,
                     info_classification_cvss_metrics, info_classification_cvss_score,
                     info_classification_epss_score, info_classification_cpe,
-                    type, matched_at, request, response, matcher_status, matcher_name, meta
+                    type, matched_at, matcher_status, matcher_name, meta
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
 
             rl.on('line', (line) => {
@@ -177,6 +173,9 @@ program
                     const info_classification_cvss_score = jsonObject["info"]["classification"]?.["cvss-score"] ?? null;
                     const info_classification_epss_score = jsonObject["info"]["classification"]?.["epss-score"] ?? null;
                     const info_classification_cpe = jsonObject["info"]["classification"]?.["cpe"] ?? null;
+                    const type = jsonObject["type"] ?? null;
+                    const matched_at = jsonObject["matched-at"] ?? null;
+                    const matcher_status = jsonObject["matcher-status"] ?? null;
                     const matcher_name = jsonObject["matcher-name"] ?? null;
                     const meta = parseField(jsonObject["meta"]) ?? null;
 
@@ -212,11 +211,9 @@ program
                         info_classification_cvss_score,
                         info_classification_epss_score,
                         info_classification_cpe,
-                        jsonObject["type"],
-                        jsonObject["matched-at"],
-                        jsonObject["request"],
-                        jsonObject["response"],
-                        jsonObject["matcher-status"],
+                        type,
+                        matched_at,
+                        matcher_status,
                         matcher_name,
                         meta
                     );
