@@ -14,13 +14,7 @@ Create a Nuclei scan report in JSON format.
 nuclei -tags cve -l targets_file.txt -j -o scan-report.json
 ```
 
-The first time, run the script with the `-c` option to create the database table.
-
-```console
-node nuclei2sqlite.js -c path/to/your/scan-report.json
-```
-
-Next time this will not be necessary.
+Now just pass the JSON file as argument to script.
 
 ```console
 node nuclei2sqlite.js path/to/your/scan-report.json
@@ -197,6 +191,18 @@ FROM scan_history
 GROUP BY template
 ORDER BY total_vulnerabilities DESC;
 ```
+
+## HTML Report (🚧 Work in progress)
+
+If you want to see a simple HTML report, run server.js script.
+
+```console
+node server.js
+```
+Now open your browser at http://localhost:3000
+
+![image](https://github.com/ricardomaia/nuclei2sqlite/assets/1353811/b1c43c24-1298-45eb-9f6f-f73bd011a9f7)
+
 
 ## License
 
