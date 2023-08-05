@@ -19,15 +19,21 @@ function getDataFromDatabase(sql, callback) {
 }
 
 // Function to build the HTML table for a given report
-function buildTable(header, data) {
+function buildTable(header, data, hide_columns = []) {
     let tableHTML = `
     <h2>${header}</h2>
     <table id="table"
+    data-toggle="table"
     data-show-columns="true"
     data-search="true"
     data-show-toggle="true"
     data-pagination="true"
     data-resizable="true"
+    data-page-size="10"
+    data-virtual-scroll="true"
+    data-search-highlight="true"
+    data-detail-view="true"
+    data-detail-formatter="detailFormatter"
     class="table table-striped table-hover table-bordered table-responsive-lg mw-100">
       <thead>
         <tr>
@@ -36,7 +42,7 @@ function buildTable(header, data) {
     const columns = Object.keys(data[0]);
 
     columns.forEach((column) => {
-        tableHTML += `<th data-field="${column}"  data-sortable="true">${column}</th>`;
+        tableHTML += `<th data-field="${column}"  data-sortable="true" data-search-highlight-formatter="customSearchFormatter">${column}</th>`;
     });
 
     tableHTML += `
@@ -54,13 +60,38 @@ function buildTable(header, data) {
         tableHTML += '</tr>';
     });
 
+    let hide_columns_script = '';
+    if (hide_columns.length > 0) {
+        hide_columns.map((column) => {
+            hide_columns_script += `$table.bootstrapTable('hideColumn', '${column}');\n`;
+        });
+    }
+
+
     tableHTML += `
       </tbody>
     </table>
     <script>
         $(function() {
             $('#table').bootstrapTable()
+        });
+
+        window.customSearchFormatter = function(value, searchText) {
+             return value.toString().replace(new RegExp('(' + searchText + ')', 'gim'), '<span style="background-color: pink;border: 1px solid red;border-radius:90px;padding:4px">$1</span>')
+        }
+
+        function detailFormatter(index, row) {
+            var html = []
+            $.each(row, function (key, value) {
+            html.push('<p><b>' + key + ':</b> ' + value + '</p>')
         })
+            return html.join('')
+        }
+
+        $(function() {
+            var $table = $('#table');
+            ${hide_columns_script}
+        });
     </script>
   `;
 
@@ -80,22 +111,26 @@ function setLayout(req, res, next) {
             <meta name="author" content="Ricardo Maia">
             <title>Scan History Reports</title>
 
-            <script
-                src="https://code.jquery.com/jquery-3.7.0.min.js"
-                integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g="
-                crossorigin="anonymous">
+            <!-- jQuery -->
+            <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous">
             </script>
 
-            <link
-              rel="stylesheet"
-              href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css"
-            />
-            <link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
-            <link href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css" rel="stylesheet">
+            <!-- Bootstrap -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" />
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 
-            <script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+            <!-- Bootstrap Table -->
+            <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
             <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.js"></script>
+
+
+            <!-- Bootstrap Resizable Columns -->
+            <link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+            <script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
             <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+
+
+
             <style>
                 table {
                     table-layout: fixed;
@@ -262,7 +297,6 @@ app.get('/all-vulnerabilities', (req, res) => {
     info_metadata_product,
     info_classification_cpe
     FROM scan_history
-    WHERE matcher_name = 'outdated_version'
     GROUP BY ip, host
     ORDER BY
     ip, host;
@@ -289,7 +323,7 @@ app.get('/all-vulnerabilities', (req, res) => {
             });
 
             console.log(data);
-            const tableHTML = buildTable('All Vulnerability Details', data);
+            const tableHTML = buildTable('All Vulnerability Details', data, hide_columns = ['extracted_results', 'info_reference', 'info_classification_cpe', 'info_metadata_product']);
             res.sendLayout(tableHTML);
         }
     });
