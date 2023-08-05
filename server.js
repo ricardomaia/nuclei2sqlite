@@ -22,7 +22,13 @@ function getDataFromDatabase(sql, callback) {
 function buildTable(header, data) {
     let tableHTML = `
     <h2>${header}</h2>
-    <table class="table">
+    <table id="table"
+    data-show-columns="true"
+    data-search="true"
+    data-show-toggle="true"
+    data-pagination="true"
+    data-resizable="true"
+    class="table table-striped table-hover table-bordered table-responsive-lg mw-100">
       <thead>
         <tr>
   `;
@@ -30,13 +36,14 @@ function buildTable(header, data) {
     const columns = Object.keys(data[0]);
 
     columns.forEach((column) => {
-        tableHTML += `<th>${column}</th>`;
+        tableHTML += `<th data-field="${column}"  data-sortable="true">${column}</th>`;
     });
 
     tableHTML += `
         </tr>
       </thead>
       <tbody>
+
   `;
 
     data.forEach((row) => {
@@ -50,6 +57,11 @@ function buildTable(header, data) {
     tableHTML += `
       </tbody>
     </table>
+    <script>
+        $(function() {
+            $('#table').bootstrapTable()
+        })
+    </script>
   `;
 
     return tableHTML;
@@ -62,17 +74,73 @@ function setLayout(req, res, next) {
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta name="description" content="">
+            <meta name="author" content="Ricardo Maia">
             <title>Scan History Reports</title>
+
+            <script
+                src="https://code.jquery.com/jquery-3.7.0.min.js"
+                integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g="
+                crossorigin="anonymous">
+            </script>
+
             <link
               rel="stylesheet"
               href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css"
             />
+            <link href="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.css" rel="stylesheet">
+            <link href="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.css" rel="stylesheet">
+
+            <script src="https://unpkg.com/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+            <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/bootstrap-table.min.js"></script>
+            <script src="https://unpkg.com/bootstrap-table@1.22.1/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+            <style>
+                table {
+                    table-layout: fixed;
+                    word-wrap: break-word;
+                    font-size: 0.8rem;
+                }
+            </style>
           </head>
           <body>
-            <div class="container">
-              <h1>Scan History Reports</h1>
-              ${content}
+        <main class="container">
+            <nav class="navbar navbar-expand-lg bg-body-tertiary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">Nuclei2SQLite</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" href="/vulnerabilities-by-ip">by IP</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" href="/vulnerabilities-by-host">by Host</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" href="/vulnerabilities-by-severity">by Severity</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" href="/vulnerabilities-by-template">by Template ID</a>
+                    </li>
+                    <li class="nav-item">
+                    <a class="nav-link" href="/all-vulnerabilities">All Vulnerabilities</a>
+                    </li>
+
+                </ul>
+                </div>
             </div>
+            </nav>
+
+
+              ${content}
+            </main>
           </body>
         </html>
       `;
@@ -84,24 +152,8 @@ function setLayout(req, res, next) {
 // Apply the layout middleware to all routes
 app.use(setLayout);
 
-// Route to display the navigation menu
-app.get('/', (req, res) => {
-    const content = `
-    <ul class="list-group">
-      <li class="list-group-item"><a href="/total-vulnerabilities">Total Vulnerabilities by Scan</a></li>
-      <li class="list-group-item"><a href="/vulnerabilities-by-ip">Vulnerabilities by IP</a></li>
-      <li class="list-group-item"><a href="/vulnerabilities-by-host">Vulnerabilities by Host</a></li>
-      <li class="list-group-item"><a href="/vulnerabilities-by-severity">Vulnerabilities by Severity</a></li>
-      <li class="list-group-item"><a href="/vulnerabilities-by-template">Vulnerabilities by Template ID</a></li>
-      <li class="list-group-item"><a href="/all-vulnerabilities">All Vulnerabilities</a></li>
-    </ul>
-  `;
-
-    res.sendLayout(content);
-});
-
 // Route to display the total vulnerabilities by scan date
-app.get('/total-vulnerabilities', (req, res) => {
+app.get('/', (req, res) => {
     const sql = `
     SELECT DATE(timestamp) as scan_date, COUNT(*) as total_vulnerabilities
     FROM scan_history
@@ -113,7 +165,7 @@ app.get('/total-vulnerabilities', (req, res) => {
         if (err) {
             res.sendLayout('Error fetching data from the database.');
         } else {
-            const tableHTML = buildTable('Total Vulnerabilities by Scan (grouped by date)', data);
+            const tableHTML = buildTable('Scan History', data);
             res.sendLayout(tableHTML);
         }
     });
@@ -198,11 +250,22 @@ app.get('/vulnerabilities-by-template', (req, res) => {
 // Route to display all vulnerability details
 app.get('/all-vulnerabilities', (req, res) => {
     const sql = `
-    SELECT ip, host, DATE(timestamp) as scan_date, tags, extracted_results,
-           cve_id, cwe_id, cvss_metrics, cvss_score, description, remediation,
-           info_name, info_author, info_description, info_reference,
-           info_severity, info_metadata_product, info_classification_cpe
-    FROM scan_history;
+   SELECT ip,
+    host,
+    extracted_results,
+    matcher_name,
+    meta,
+    info_name,
+    REPLACE(REPLACE(info_tags, '[', ''), ']', '') as tags,
+    REPLACE(REPLACE(info_reference, '[', ''), ']', '') as info_reference,
+    info_severity,
+    info_metadata_product,
+    info_classification_cpe
+    FROM scan_history
+    WHERE matcher_name = 'outdated_version'
+    GROUP BY ip, host
+    ORDER BY
+    ip, host;
   `;
 
     getDataFromDatabase(sql, (err, data) => {
